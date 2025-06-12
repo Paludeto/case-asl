@@ -27,14 +27,10 @@ class ECGEntry:
     def __init__(self, idx: int):
 
         self._load_data(idx)
-        self._detect_peaks()
+        self._detect_peaks()     
+        self._annotate_peaks()  
 
-        # Combina instantes dos picos R com anotações => CONSERTAR ISSO, FAZER DE FORMA MAIS CLEAN!!!
-        lookup = {s: sym for s, sym in zip(self._ann.sample, self._ann.symbol)}
-        self._annotated_r_peaks: List[Tuple[int, str]] = [
-            (i, lookup[i]) for i in self._r_peaks_indices if i in lookup
-        ]
-
+    # Carrega dados para o objeto ECGEntry
     def _load_data(self, idx: int, db_dir: str = 'db') -> None:
 
         path = Path(__file__).resolve().parent.parent / db_dir / f"{idx}"
@@ -49,12 +45,21 @@ class ECGEntry:
         self._signal_mv: np.ndarray = self._record.p_signal[:, 0]
         self._sample_indices: np.ndarray = np.arange(self._record.sig_len)
     
+    # Usa XQRS para detecção de picos automática
     def _detect_peaks(self) -> None:
 
         # Detecção de picos R em sinais QRS
         det = processing.XQRS(self._signal_mv, fs=self._record.fs)
         det.detect()
         self._r_peaks_indices: np.ndarray = det.qrs_inds
+
+    # Combina número de amostra + tipo de batida em uma tupla
+    def _annotate_peaks(self) -> None:
+        
+        lookup = {s: sym for s, sym in zip(self._ann.sample, self._ann.symbol)}
+        self._annotated_r_peaks: List[Tuple[int, str]] = [
+            (i, lookup[i]) for i in self._r_peaks_indices if i in lookup
+        ]
 
     # Funções de plot, usando janela de 100 segundos
     def plot(self, beat: int, window: int = 50) -> None:
