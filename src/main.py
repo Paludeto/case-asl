@@ -55,7 +55,7 @@ class ECGEntry:
 
     # Combina número de amostra + tipo de batida em uma tupla
     def _annotate_peaks(self) -> None:
-        
+
         lookup = {s: sym for s, sym in zip(self._ann.sample, self._ann.symbol)}
         self._annotated_r_peaks: List[Tuple[int, str]] = [
             (i, lookup[i]) for i in self._r_peaks_indices if i in lookup
@@ -83,9 +83,6 @@ class ECGEntry:
         plt.legend(["Batimento Normal", "Arritmia"])
         plt.tight_layout()
         plt.show()
-
-    def busca_ritmo(self, tag: str) -> list[int]:
-        return [s for s, note in self.rhythm_events if note.startswith(tag)]
 
 if __name__ == "__main__":
 
