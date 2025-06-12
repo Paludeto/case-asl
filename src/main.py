@@ -96,7 +96,9 @@ if __name__ == "__main__":
     print(entry._annotated_r_peaks[1553])
     print(entry2._annotated_r_peaks[1134])
     print(entry3._annotated_r_peaks[1572])
+    print(entry4._annotated_r_peaks[11])
 
-    entry.multi_plot(normal=0, atipico=1553, titulo=f'Batimento Normal x Contração Ventricular Prematura ({100})')  # ~25:13 PVCs
-    entry2.multi_plot(normal=0, atipico=1134, titulo=f'Batimento Normal x Contração Ventricular Prematura ({201})') # ~24:15 Aberrated atrial couplet, fusion PVC
-    entry3.multi_plot(normal=1, atipico=1572, titulo=f'Batimento Normal x Contração Ventricular Prematura ({105})')
+    entry.multi_plot(normal=0, atipico=1553, titulo=f'Batimento Normal x Contração Ventricular Prematura ({100})')  #   ~25:13 PVCs
+    entry2.multi_plot(normal=0, atipico=1134, titulo=f'Batimento Normal x Contração Ventricular Prematura ({201})') #   ~24:15 Aberrated atrial couplet, fusion PVC
+    entry3.multi_plot(normal=1, atipico=1572, titulo=f'Batimento Normal x Contração Ventricular Prematura ({105})') #   26:45 PVC
+    entry4.multi_plot(normal=0, atipico=11, titulo=f'Batimento Normal x Contração Ventricular Prematura ({200})')   #   1:42 Ventricular tachycardia, 3 beats
