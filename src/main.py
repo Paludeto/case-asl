@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import wfdb
 from wfdb import processing
+import pywt
+from scipy.signal import spectrogram
 
 # Classe na qual armazenamos informações do sinal
 class ECGEntry:
@@ -119,7 +121,7 @@ class ECGEntry:
         return np.mean(np.array(all_beats_signals), axis=0)
     
     # Plota a média das ondas no gráfio
-    def plot_waveforms(self, waveforms: dict, titulo: str):
+    def plot_waveforms(self, waveforms: dict, titulo: str) -> None:
         plt.figure(figsize=(12, 7))
         plt.title(titulo)
 
@@ -134,6 +136,66 @@ class ECGEntry:
         plt.legend()
         plt.tight_layout()
         plt.show()
+
+    # Plota Sinal com Fourier
+    def plot_frequency_spectrum(self, waveform: np.ndarray, titulo: str) -> None:
+        fs = self._record.fs
+        N = len(waveform)
+
+        yf = np.fft.rfft(waveform)
+        yf_magnitude = 2.0/N * np.abs(yf)
+
+        xf = np.fft.rfftfreq(N, 1/fs)
+
+        plt.figure(figsize=(12, 7))
+        plt.plot(xf, yf_magnitude)
+        plt.title(titulo)
+        plt.xlabel("Frequência (Hz)")
+        plt.ylabel("Amplitude")
+        plt.grid(True)
+        plt.xlim(0, 60)
+        plt.tight_layout()
+        plt.show()
+
+    def plot_wavelet_scalogram(self, waveform: np.ndarray, titulo: str) -> None:
+        # Frequencia de amostragem do sinal 
+        fs = self._record.fs
+
+        # Frequencia ao longo do tempo com Wavelet usando morlet
+        scales = np.arange(1, 128)
+        coef, freqs = pywt.cwt(waveform, scales, 'morl', sampling_period=1/fs)
+
+        # Definição do tempo
+        duracao = len(waveform) / fs
+        t = np.linspace(0, duracao, num=len(waveform), endpoint=False)
+
+        plt.figure(figsize=(12, 6))
+        plt.pcolormesh(t, freqs, np.abs(coef), cmap='viridis', shading='gouraud')
+        plt.title(titulo)
+        plt.xlabel('Tempo (s)')
+        plt.ylabel('Frequência (Hz)')
+        plt.colorbar(label='Magnitude do Coeficiente CWT')
+        plt.tight_layout()
+
+    def plot_fourier_scalogram(self, waveform: np.ndarray, titulo: str) -> None:
+        fs = self._record.fs
+
+        # Calcula o espectrograma (STFT)
+        f, t, Sxx = spectrogram(waveform, fs=fs, window='hann', nperseg=64, noverlap=48)
+
+        plt.figure(figsize=(12, 6))
+        plt.pcolormesh(t, f, 10 * np.log10(Sxx), shading='gouraud', cmap='viridis')
+        plt.title(f"Espectrograma de Fourier (STFT) - {titulo}")
+        plt.xlabel("Tempo (s)")
+        plt.ylabel("Frequência (Hz)")
+        plt.colorbar(label="Intensidade (dB)")
+        plt.tight_layout()
+        plt.show()
+            
+
+
+
+    
 
 
 if __name__ == "__main__":
@@ -163,16 +225,24 @@ if __name__ == "__main__":
 
     entry4.multi_plot(normal=normais_200[0], atipico=ventriculares_200[0], titulo=f'Batimento Normal x PVC ({200})')
 
-
-    avg_normal_beat = entry2.calculate_average_beat(beat_type='N')
-    avg_pvc_beat = entry2.calculate_average_beat(beat_type='V')
+    
+    avg_normal_beat = entry.calculate_average_beat(beat_type='N')
+    avg_pvc_beat = entry.calculate_average_beat(beat_type='V')
 
     formas_de_onda_para_plotar = {
         "Normal": avg_normal_beat,
         "PVC": avg_pvc_beat,
     }
 
-    entry.plot_waveforms(
-        waveforms=formas_de_onda_para_plotar,
-        titulo=f'Comparação de Moldes Médios (Registro {entry2._record.record_name})'
-    )
+    entry.plot_waveforms(formas_de_onda_para_plotar, "media")
+
+    entry.plot_frequency_spectrum(avg_normal_beat, "Fourier Normal")
+    entry.plot_frequency_spectrum(avg_pvc_beat, "Fourier PVC")
+
+    entry.plot_wavelet_scalogram(avg_normal_beat, "normal")
+    entry.plot_wavelet_scalogram(avg_pvc_beat, "pvc")
+
+    entry.plot_fourier_scalogram(avg_normal_beat, "normal")
+    entry.plot_fourier_scalogram(avg_pvc_beat, "pvc")
+
+    plt.show()
