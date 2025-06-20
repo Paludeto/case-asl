@@ -158,16 +158,36 @@ class ECGEntry:
         plt.show()
 
     def plot_wavelet_scalogram(self, waveform: np.ndarray, titulo: str) -> None:
-        # Frequencia de amostragem do sinal 
+        # Frequência de amostragem do sinal
         fs = self._record.fs
-
-        # Frequencia ao longo do tempo com Wavelet usando morlet
-        scales = np.arange(1, 128)
+        scales = np.arange(1, 128) # Escalas da CWT
         coef, freqs = pywt.cwt(waveform, scales, 'morl', sampling_period=1/fs)
 
-        # Definição do tempo
+        # Limita as frequências analisadas até 50 Hz
+        freq_max = 50  # Hz
+        mask = freqs <= freq_max
+        coef = coef[mask, :]
+        freqs = freqs[mask]
+
+        # Gera o vetor de tempo com o mesmo comprimento do sinal
         duracao = len(waveform) / fs
         t = np.linspace(0, duracao, num=len(waveform), endpoint=False)
+        # Obtem a matriz de magnitudes
+        magnitude = np.abs(coef)
+
+        # Encontra o índice do valor máximo
+        i_freq, i_tempo = np.unravel_index(np.argmax(magnitude), magnitude.shape)
+        valor_maximo = np.max(magnitude)
+
+        print(f"Valor máximo da magnitude dos coeficientes CWT: {valor_maximo:.2f}")
+
+        # Frequência correspondente
+        freq_pico = freqs[i_freq]
+        print(f"Frequência de pico: {freq_pico:.2f} Hz", titulo)
+
+        tempo_pico = t[i_tempo]
+        print(f"Instante de pico: {tempo_pico:.3f} s", titulo)
+
 
         plt.figure(figsize=(12, 6))
         plt.pcolormesh(t, freqs, np.abs(coef), cmap='viridis', shading='gouraud')
@@ -176,6 +196,7 @@ class ECGEntry:
         plt.ylabel('Frequência (Hz)')
         plt.colorbar(label='Magnitude do Coeficiente CWT')
         plt.tight_layout()
+
 
     def plot_fourier_scalogram(self, waveform: np.ndarray, titulo: str) -> None:
         fs = self._record.fs
@@ -194,16 +215,12 @@ class ECGEntry:
             
 
 
-
-    
-
-
 if __name__ == "__main__":
 
     entry = ECGEntry(100)
-    entry2 = ECGEntry(201)
-    entry3 = ECGEntry(105)
-    entry4 = ECGEntry(200)
+    entry2 = ECGEntry(200) 
+    entry3 = ECGEntry(201) 
+    entry4 = ECGEntry(221)
 
     normais_100 = entry.get_beats_by_annotation('N')
     ventriculares_100 = entry.get_beats_by_annotation('V')
@@ -226,23 +243,23 @@ if __name__ == "__main__":
     entry4.multi_plot(normal=normais_200[0], atipico=ventriculares_200[0], titulo=f'Batimento Normal x PVC ({200})')
 
     
-    avg_normal_beat = entry.calculate_average_beat(beat_type='N')
-    avg_pvc_beat = entry.calculate_average_beat(beat_type='V')
+    avg_normal_beat = entry2.calculate_average_beat(beat_type='N')
+    avg_pvc_beat = entry2.calculate_average_beat(beat_type='V')
 
     formas_de_onda_para_plotar = {
         "Normal": avg_normal_beat,
         "PVC": avg_pvc_beat,
     }
 
-    entry.plot_waveforms(formas_de_onda_para_plotar, "media")
+    entry.plot_waveforms(formas_de_onda_para_plotar, "Média do Registro 200")
 
     entry.plot_frequency_spectrum(avg_normal_beat, "Fourier Normal")
     entry.plot_frequency_spectrum(avg_pvc_beat, "Fourier PVC")
 
-    entry.plot_wavelet_scalogram(avg_normal_beat, "normal")
-    entry.plot_wavelet_scalogram(avg_pvc_beat, "pvc")
+    entry.plot_wavelet_scalogram(avg_normal_beat, "Batimento Normal")
+    entry.plot_wavelet_scalogram(avg_pvc_beat, "Batimento PVC")
 
-    entry.plot_fourier_scalogram(avg_normal_beat, "normal")
-    entry.plot_fourier_scalogram(avg_pvc_beat, "pvc")
+    entry.plot_fourier_scalogram(avg_normal_beat, "Batimento Normal")
+    entry.plot_fourier_scalogram(avg_pvc_beat, "Batimento PVC")
 
     plt.show()
